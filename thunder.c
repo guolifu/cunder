@@ -174,6 +174,9 @@ PHP_MINIT_FUNCTION(thunder)
 	/* If you have INI entries, uncomment these lines
 	REGISTER_INI_ENTRIES();
 	*/
+	AG(stringWeb) = zend_new_interned_string(zend_string_init(ZEND_STRL("WEB"), 1));
+    AG(stringEn) = zend_new_interned_string(zend_string_init(ZEND_STRL("en_US"), 1));
+    AG(stringSlash) = zend_new_interned_string(zend_string_init(ZEND_STRL("/"), 1));
 	zend_class_entry ce;
 	INIT_CLASS_ENTRY(ce, "ExtensionClass", thunder_functions);
 
