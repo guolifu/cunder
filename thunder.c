@@ -366,20 +366,34 @@ PHP_METHOD(thunder_bootstrap, run){
 	uri = THUNDER_G(uri);
 	zend_string *stringSlash;
 	char *temp = ZSTR_VAL(uri);
-//   php_printf("%s\n",temp);
-
 	zend_ulong pathsOffset = 0;
 	paths = &THUNDER_G(paths);
+
 	if (ZSTR_LEN(uri)) {
 		php_explode( zend_new_interned_string(zend_string_init(ZEND_STRL("/"), 1)), uri, paths, ZEND_LONG_MAX);
 	}
-	field = zend_hash_index_find(Z_ARRVAL_P(paths), pathsOffset);
-	THUNDER_G(controllerName) = zend_string_tolower(Z_STR_P(field));
+	//获取数组个数
+	HashTable *myht;
+	myht = Z_ARRVAL_P(paths);
+	uint32_t arr_result;
+	arr_result = zend_array_count(myht);
+	// arr_result = strpprintf(0, "array size is %d", zend_array_count(myht));
+	if (arr_result==0){
+		THUNDER_G(controllerName) = zend_string_init("index", strlen("index"), 0);
+		THUNDER_G(actionName) = zend_string_init("index", strlen("index"), 0);
+	}else if (arr_result==1)
+	{
+		field = zend_hash_index_find(Z_ARRVAL_P(paths), pathsOffset);
+		THUNDER_G(controllerName) = zend_string_tolower(Z_STR_P(field));
+		THUNDER_G(actionName) = zend_string_init("index", strlen("index"), 0);
+	}else{	
+		field = zend_hash_index_find(Z_ARRVAL_P(paths), pathsOffset);
+		THUNDER_G(controllerName) = zend_string_tolower(Z_STR_P(field));
 
 
-	field = zend_hash_index_find(Z_ARRVAL_P(paths), pathsOffset+1);
-	THUNDER_G(actionName) = zend_string_tolower(Z_STR_P(field));
-
+		field = zend_hash_index_find(Z_ARRVAL_P(paths), pathsOffset+1);
+		THUNDER_G(actionName) = zend_string_tolower(Z_STR_P(field));
+	}
 	zend_string *controllerPath;
 	controllerPath = strpprintf(0, "%s%s%c%s.php", ZSTR_VAL(THUNDER_G(appRoot)), "controllers", DEFAULT_SLASH, ZSTR_VAL(THUNDER_G(controllerName)));
 	
@@ -400,11 +414,13 @@ PHP_METHOD(thunder_bootstrap, run){
 
 	//查找controller对应的
 	//zend_class_entry *zend_lookup_class(zend_string *name);
-	zend_class_entry *controller_ce = zend_lookup_class(THUNDER_G(controllerName));
+	zend_string *cname;
+	cname = strpprintf(0, "%s%s", ZSTR_VAL(THUNDER_G(controllerName)),"Controller");
+	ZSTR_VAL(cname)[0] = toupper(ZSTR_VAL(cname)[0]);	// ucfirst	
+	zend_class_entry *controller_ce = zend_lookup_class(cname);
 
 	if(controller_ce == NULL){
-
-		zend_error_noreturn(E_CORE_ERROR,"Couldn't find file: %s.",c_path);
+		zend_error_noreturn(E_CORE_ERROR,"Couldn't find class: %s.",ZSTR_VAL(cname));
 	}
 
 
@@ -514,3 +530,4 @@ ZEND_GET_MODULE(thunder)
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4
  */
+
