@@ -273,6 +273,7 @@ PHP_METHOD(thunder_bootstrap, init)
 		// empty
 		baseUri = AG(stringSlash);
 	}
+
 	do {
 		if ((field = GlobalsStrFind(TRACK_VARS_SERVER, ZEND_STRL("PATH_INFO"))) &&
 				Z_TYPE_P(field) == IS_STRING) {
@@ -333,30 +334,33 @@ PHP_METHOD(thunder_bootstrap, init)
 
 	if (uri) {
 		zend_string *t = uri;
-		uri = php_trim(uri, ZEND_STRL("/"), 3);
+		if (ZSTR_VAL(uri)!="/"){
+			zend_string *temp_baseuri;
+			//是否是二级路由
+			if (ZSTR_LEN(baseUri)>1){
+				temp_baseuri = php_trim(baseUri, ZEND_STRL("/"), 2);
+			}else{				
+				temp_baseuri = baseUri;
+			}
+			
+			char *char_temp_baseuri = ZSTR_VAL(temp_baseuri);			
+			uri = php_trim(uri, ZEND_STRL(char_temp_baseuri), 1);
+		}
 		zend_string_release(t);
 	} else {
 		uri = ZSTR_EMPTY_ALLOC();
 	}
+		
 	THUNDER_G(uri) = uri;
 
 	// define AZALEA magic const
 	module_number = AG(moduleNumber);
 	REGISTER_NS_STRINGL_CONSTANT(THUNDER_NS, "DOCROOT", ZSTR_VAL(docRoot), ZSTR_LEN(docRoot), CONST_CS);
 
-	zend_string *ztemp ;
-	len = strlen(cwd);
-	ztemp = zend_string_init(cwd, len+1, 0);
-	ZSTR_VAL(ztemp)[len] = DEFAULT_SLASH;
-	ZSTR_VAL(ztemp)[len + 1] = '\0';
-	char *temp = ZSTR_VAL(ztemp);
-	strcat(temp,"app");
-	len = strlen(temp);
-	appRoot = zend_string_init(temp, len + 1, 0);
 
-	ZSTR_VAL(appRoot)[len] = DEFAULT_SLASH;
-	ZSTR_VAL(appRoot)[len + 1] = '\0';
-	THUNDER_G(appRoot) = appRoot;
+	THUNDER_G(appRoot) = strpprintf(0, "%s%c%s%c", cwd, DEFAULT_SLASH , "application", DEFAULT_SLASH);
+	
+	php_printf("%s\n", ZSTR_VAL(THUNDER_G(appRoot)));
 
 }
 PHP_METHOD(thunder_bootstrap, run){
@@ -369,6 +373,7 @@ PHP_METHOD(thunder_bootstrap, run){
 	zend_ulong pathsOffset = 0;
 	paths = &THUNDER_G(paths);
 
+	
 	if (ZSTR_LEN(uri)) {
 		php_explode( zend_new_interned_string(zend_string_init(ZEND_STRL("/"), 1)), uri, paths, ZEND_LONG_MAX);
 	}
@@ -395,10 +400,13 @@ PHP_METHOD(thunder_bootstrap, run){
 		THUNDER_G(actionName) = zend_string_tolower(Z_STR_P(field));
 	}
 	zend_string *controllerPath;
-	controllerPath = strpprintf(0, "%s%s%c%s.php", ZSTR_VAL(THUNDER_G(appRoot)), "controllers", DEFAULT_SLASH, ZSTR_VAL(THUNDER_G(controllerName)));
-	
+	zend_string *cfilename;
+	//构建控制器文件名
+	cfilename = strpprintf(0, "%s.php", ZSTR_VAL(THUNDER_G(controllerName)));
+	ZSTR_VAL(cfilename)[0] = toupper(ZSTR_VAL(cfilename)[0]);	// ucfirst	
+	//构建控制器文件路径
+	controllerPath = strpprintf(0, "%s%s%c%s", ZSTR_VAL(THUNDER_G(appRoot)), "controllers", DEFAULT_SLASH, ZSTR_VAL(cfilename));
 	char *c_path = ZSTR_VAL(controllerPath);
-
 	//加载执行controller文件
 	int flag;
 	flag = zend_execute_scripts_ext(c_path);
@@ -409,9 +417,6 @@ PHP_METHOD(thunder_bootstrap, run){
 		zend_error_noreturn(E_CORE_ERROR,"Couldn't find file: %s.",c_path);
 
 	}
-
-      
-
 	//查找controller对应的
 	//zend_class_entry *zend_lookup_class(zend_string *name);
 	zend_string *cname;
@@ -420,7 +425,7 @@ PHP_METHOD(thunder_bootstrap, run){
 	zend_class_entry *controller_ce = zend_lookup_class(cname);
 
 	if(controller_ce == NULL){
-		zend_error_noreturn(E_CORE_ERROR,"Couldn't find class: %s.",ZSTR_VAL(cname));
+		zend_error_noreturn(E_CORE_ERROR,"Couldn't find class: %s. at %s ",ZSTR_VAL(cname),c_path);
 	}
 
 
