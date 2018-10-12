@@ -390,15 +390,23 @@ PHP_METHOD(thunder_bootstrap, run){
 	}else if (arr_result==1)
 	{
 		field = zend_hash_index_find(Z_ARRVAL_P(paths), pathsOffset);
-		THUNDER_G(controllerName) = zend_string_tolower(Z_STR_P(field));
+		if (Z_STRLEN_P(field)!=0){
+			THUNDER_G(controllerName) = zend_string_tolower(Z_STR_P(field));
+		}else{
+			THUNDER_G(controllerName) = zend_string_init("index", strlen("index"), 0);
+		}
 		THUNDER_G(actionName) = zend_string_init("index", strlen("index"), 0);
 	}else{	
 		field = zend_hash_index_find(Z_ARRVAL_P(paths), pathsOffset);
 		THUNDER_G(controllerName) = zend_string_tolower(Z_STR_P(field));
-
-
 		field = zend_hash_index_find(Z_ARRVAL_P(paths), pathsOffset+1);
-		THUNDER_G(actionName) = zend_string_tolower(Z_STR_P(field));
+
+		if (Z_STRLEN_P(field)!=0){
+			THUNDER_G(actionName) = zend_string_tolower(Z_STR_P(field));
+		}else{
+			THUNDER_G(actionName) = zend_string_init("index", strlen("index"), 0);
+		}
+		
 	}
 	zend_string *controllerPath;
 	zend_string *cfilename;
