@@ -332,6 +332,7 @@ PHP_METHOD(thunder_bootstrap, init)
 	}
 	THUNDER_G(baseUri) = baseUri;
 
+
 	if (uri) {
 		zend_string *t = uri;
 		if (ZSTR_VAL(uri)!="/"){
@@ -343,7 +344,8 @@ PHP_METHOD(thunder_bootstrap, init)
 				temp_baseuri = baseUri;
 			}
 			
-			char *char_temp_baseuri = ZSTR_VAL(temp_baseuri);			
+			char *char_temp_baseuri = ZSTR_VAL(temp_baseuri);
+			
 			uri = php_trim(uri, ZEND_STRL(char_temp_baseuri), 1);
 		}
 		zend_string_release(t);
@@ -360,7 +362,6 @@ PHP_METHOD(thunder_bootstrap, init)
 
 	THUNDER_G(appRoot) = strpprintf(0, "%s%c%s%c", cwd, DEFAULT_SLASH , "application", DEFAULT_SLASH);
 	
-	php_printf("%s\n", ZSTR_VAL(THUNDER_G(appRoot)));
 
 }
 PHP_METHOD(thunder_bootstrap, run){
@@ -406,7 +407,9 @@ PHP_METHOD(thunder_bootstrap, run){
 	ZSTR_VAL(cfilename)[0] = toupper(ZSTR_VAL(cfilename)[0]);	// ucfirst	
 	//构建控制器文件路径
 	controllerPath = strpprintf(0, "%s%s%c%s", ZSTR_VAL(THUNDER_G(appRoot)), "controllers", DEFAULT_SLASH, ZSTR_VAL(cfilename));
+	
 	char *c_path = ZSTR_VAL(controllerPath);
+
 	//加载执行controller文件
 	int flag;
 	flag = zend_execute_scripts_ext(c_path);
@@ -417,6 +420,9 @@ PHP_METHOD(thunder_bootstrap, run){
 		zend_error_noreturn(E_CORE_ERROR,"Couldn't find file: %s.",c_path);
 
 	}
+
+      
+
 	//查找controller对应的
 	//zend_class_entry *zend_lookup_class(zend_string *name);
 	zend_string *cname;
@@ -446,7 +452,7 @@ PHP_METHOD(thunder_bootstrap, run){
 							"Couldn't find implementation for method %s%s%s", 
 							controller_ce ? ZSTR_VAL(controller_ce->name) : "", 
 							controller_ce ? "::" : "", 
-							function_name);
+							Z_STRVAL(function_name));
 	
 	}
 }
@@ -535,4 +541,3 @@ ZEND_GET_MODULE(thunder)
  * vim600: noet sw=4 ts=4 fdm=marker
  * vim<600: noet sw=4 ts=4
  */
-
