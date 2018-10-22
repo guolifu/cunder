@@ -4,7 +4,7 @@
 
 >cd tools && php thunder_cg projectname
 
->cd ../ 
+>cd output
 
 >you can see your projectname
 
